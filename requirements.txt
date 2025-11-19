@@ -1,14 +1,56 @@
-streamlit
-tensorflow==2.17.0
-numpy
-Pillow
-fastapi
+# requirements.txt generated from .venv_lcdtx/Lib/site-packages listing (partial/inferred)
+# TensorFlow version set for compatibility with tf.keras and HDF5 model loading in api_backend.py
+# For a complete, exact file run:
+#   \.\.venv_lcdtx\Scripts\Activate.ps1; pip freeze > requirements.txt
+# (or on cmd.exe: .\.venv_lcdtx\Scripts\activate.bat & pip freeze > requirements.txt)
+
+absl-py==2.3.0
+altair==5.5.0
+annotated-types==0.7.0
+anyio==4.10.0
+astunparse==1.6.3
+attrs==25.3.0
+blinker==1.9.0
+cachetools==5.5.2
+certifi==2025.6.15
+charset-normalizer==3.4.2
+click==8.1.8
+colorama==0.4.6
+exceptiongroup==1.3.0
+fastapi==0.116.1
+flatbuffers==25.2.10
+gast==0.4.0
+GitPython==3.1.44
+google-auth-oauthlib==0.4.6
+google-auth==2.40.3
+google-pasta==0.2.0
+grpcio==1.73.0
+h11==0.16.0
+h5py==3.14.0
+idna==3.10
+importlib-metadata==8.7.0
+Jinja2==3.1.6
+protobuf
+tensorflow==2.10.0
+numpy==1.26.4
+
+# The following packages were present in the venv listing but their exact
+# versions were not visible in the truncated attachment. You should replace
+# these with pinned versions by running pip freeze in the venv.
+python-dateutil
+jsonschema
+typing-extensions
+six
 uvicorn
-pydantic
-google-generativeai
-PyMuPDF
-python-docx
-pytest
-requests
+streamlit
 python-multipart
-python-dotenv
+
+# Notes:
+# - This is a best-effort file. To get the authoritative list, activate the
+#   .venv_lcdtx virtual environment on your machine and run:
+#     \.\.venv_lcdtx\Scripts\Activate.ps1; pip freeze > requirements.txt
+# - If you want, I can run that command here if you give me permission to run
+#   shell commands in your environment, or you can paste the output of
+#   `pip freeze` and I will clean/format it for you.
+# .\.venv_lcdtx\Scripts\Activate.ps1
+# pip install -r requirements.txt
