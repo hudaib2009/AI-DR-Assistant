@@ -1,0 +1,14 @@
+streamlit
+tensorflow==2.17.0
+numpy
+Pillow
+fastapi
+uvicorn
+pydantic
+google-generativeai
+PyMuPDF
+python-docx
+pytest
+requests
+python-multipart
+python-dotenv
