@@ -309,14 +309,14 @@
     <nav class="nav" aria-label="Primary">
         <div class="container nav-inner">
             <!-- Brand with logo + title -->
-            <a class="brand" href="web_v1.2.html" aria-label="Go to Home">
+            <a class="brand" href="index.html" aria-label="Go to Home">
                 <img src="photos/logo.png" alt="AI DR Assistant logo" class="brand-img" />
                 <span class="brand-name">AI DR Assistant</span>
                 <span class="brand-sub">by JMI</span>
             </a>
 
             <div class="nav-actions">
-                <a href="web_v1.2.html" class="btn">← Back to Home</a>
+                <a href="index.html" class="btn">← Back to Home</a>
                 <button class="icon-btn" id="btnTheme" aria-label="Toggle theme" title="Toggle dark/light">🌓</button>
             </div>
         </div>
@@ -334,7 +334,7 @@
                     <p class="lead">Powered by JMI AI - LCDT(X-b) Model. Upload a chest X-ray image for instant AI-powered analysis and diagnosis assistance.</p>
                     <div class="grid cols-2">
                         <a href="#upload" class="btn primary">Start Analysis</a>
-                        <a href="web_v1.2.html" class="btn">Learn More</a>
+                        <a href="index.html" class="btn">Learn More</a>
                     </div>
                 </div>
                 <div class="hero-card">
@@ -411,9 +411,9 @@
                     </div>
                     <div>
                         <div class="lead" style="font-size:13px;">Support</div>
-                        <div><a href="web_v1.2.html">Documentation</a></div>
-                        <div><a href="web_v1.2.html#feedback">Feedback</a></div>
-                        <div><a href="web_v1.2.html#info">Team Info</a></div>
+                        <div><a href="index.html">Documentation</a></div>
+                        <div><a href="index.html#feedback">Feedback</a></div>
+                        <div><a href="index.html#info">Team Info</a></div>
                     </div>
                 </div>
             </div>
@@ -450,7 +450,7 @@
 
         // ---------- Upload functionality ----------
         const config = {
-            API_BASE_URL: 'NGROK_XRAY_BASE_URL_HERE' // Replace this with your actual ngrok URL for port 8000
+            API_BASE_URL: 'http://localhost:8000' // Replace this with your actual ngrok URL for port 8000
         };
 
         let currentFile = null;
