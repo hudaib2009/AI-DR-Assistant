@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JMI - Chest X-Ray Analysis</title>
+    <meta name="description" content="AI-powered chest X-ray analysis using LCDT(X-b) model by Team JMI" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* =============================================================
+           THEME & DESIGN TOKENS
+           - Uses CSS variables and a data-theme attribute for persistence
+           - Update --primary to match your brand accent
+           ============================================================= */
+        :root {
+            --bg: #ffffff;
+            --surface: #f6f7fb;
+            --text: #16181d;
+            --muted: #5b657a;
+            --primary: #5e17eb; /* Brand accent */
+            --primary-contrast: #ffffff;
+            --border: #e3e6ef;
+            --radius: 14px;
+            --shadow: 0 10px 30px rgba(10,20,60,.08);
+            --transition: 250ms ease;
+            --nav-h: 68px;
+            --maxw: 1100px;
+            --focus: 3px solid color-mix(in oklab, var(--primary), white 40%);
+        }
+        [data-theme="dark"] {
+            --bg: #0f1117;
+            --surface: #161a23;
+            --text: #e9ecf1;
+            --muted: #9aa3b2;
+            --border: #23283a;
+            --shadow: 0 10px 30px rgba(0,0,0,.35);
+        }
+
+        /* Global reset & base */
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { height: 100%; }
+        html { scroll-behavior: smooth; }
+        body {
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+            background: radial-gradient(1200px 800px at 85% -200px, color-mix(in oklab, var(--primary), transparent 85%), transparent 40%), var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: background-color var(--transition), color var(--transition);
+        }
+        img { max-width: 100%; height: auto; display: block; }
+        a { color: inherit; text-decoration: none; }
+        button { font: inherit; cursor: pointer; }
+        :focus-visible { outline: var(--focus); outline-offset: 2px; border-radius: 10px; }
+
+        .container { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+        .section { padding: 88px 0; }
+        .section h2 { margin: 0 0 10px; font-size: clamp(22px, 2.1vw + 14px, 38px); color: var(--text); }
+        .lead { color: var(--muted); margin-top: 0; }
+
+        /* =============================================================
+           NAVBAR (fixed) with brand, logo, theme toggle
+           ============================================================= */
+        .nav {
+            position: sticky; top: 0; z-index: 50; height: var(--nav-h);
+            background: color-mix(in oklab, var(--surface), transparent 10%);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .brand { display: inline-flex; align-items: center; gap: 10px; text-wrap: nowrap; }
+        .brand-img { height: clamp(28px, 5vw, 44px); width: clamp(28px, 5vw, 44px); border-radius: 50%; object-fit: cover; }
+        .brand-name { font-weight: 800; letter-spacing: .2px; }
+        .brand-sub { color: var(--muted); font-size: 12px; margin-left: 6px; }
+        .nav-actions { display: flex; align-items: center; gap: 8px; }
+        .icon-btn { border: 1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 8px 12px; box-shadow: var(--shadow); transition: transform var(--transition), background-color var(--transition); }
+        .icon-btn:hover { transform: translateY(-1px); }
+
+        /* =============================================================
+           BUTTONS & BADGES
+           ============================================================= */
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); box-shadow: var(--shadow); transition: transform var(--transition), background-color var(--transition), box-shadow var(--transition); }
+        .btn:hover { transform: translateY(-2px); }
+        .btn.primary { background: linear-gradient(135deg, var(--primary), #7a49f1); color: var(--primary-contrast); border-color: transparent; }
+
+        .badge { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); font-size: 12px; color: var(--muted); background: var(--surface); }
+
+        /* =============================================================
+           GRIDS & CARDS
+           ============================================================= */
+        .grid { display: grid; gap: 16px; }
+        .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 900px){ .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; } }
+
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); transition: transform var(--transition), box-shadow var(--transition); }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(0,0,0,.12); }
+
+        /* =============================================================
+           UPLOAD SECTION
+           ============================================================= */
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 60px 20px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: var(--surface);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: color-mix(in oklab, var(--primary), transparent 95%);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: color-mix(in oklab, var(--primary), transparent 90%);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* =============================================================
+           ANALYSIS SECTION
+           ============================================================= */
+        .analysis-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .image-preview {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .result-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+            border-left: 5px solid var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .result-danger {
+            border-left-color: #dc3545;
+            background: color-mix(in oklab, #dc3545, transparent 95%);
+        }
+
+        .result-normal {
+            border-left-color: #28a745;
+            background: color-mix(in oklab, #28a745, transparent 95%);
+        }
+
+        .result-title {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .result-danger .result-title {
+            color: #dc3545;
+        }
+
+        .result-normal .result-title {
+            color: #28a745;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background-color: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, #7a49f1 100%);
+            transition: width 0.5s ease;
+        }
+
+        .confidence-text {
+            font-size: 1.1rem;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        /* =============================================================
+           LOADING & MESSAGES
+           ============================================================= */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: color-mix(in oklab, #dc3545, transparent 95%);
+            color: #721c24;
+            padding: 15px;
+            border-radius: var(--radius);
+            margin: 20px 0;
+            display: none;
+            border: 1px solid color-mix(in oklab, #dc3545, transparent 70%);
+        }
+
+        .success-message {
+            background: color-mix(in oklab, #28a745, transparent 95%);
+            color: #155724;
+            padding: 15px;
+            border-radius: var(--radius);
+            margin: 20px 0;
+            display: none;
+            border: 1px solid color-mix(in oklab, #28a745, transparent 70%);
+        }
+
+        /* =============================================================
+           API STATUS
+           ============================================================= */
+        .api-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+
+        .status-online {
+            background: color-mix(in oklab, #28a745, transparent 95%);
+            color: #155724;
+            border: 1px solid color-mix(in oklab, #28a745, transparent 70%);
+        }
+
+        .status-offline {
+            background: color-mix(in oklab, #dc3545, transparent 95%);
+            color: #721c24;
+            border: 1px solid color-mix(in oklab, #dc3545, transparent 70%);
+        }
+
+        /* =============================================================
+           REVEAL ANIMATIONS (respect reduced motion)
+           ============================================================= */
+        @media (prefers-reduced-motion: no-preference) {
+            .reveal { opacity: 0; transform: translateY(14px); }
+            .reveal.in { opacity: 1; transform: translateY(0); transition: opacity 600ms ease, transform 600ms ease; }
+        }
+    </style>
+</head>
+<body>
+    <div class="api-status" id="apiStatus">Checking API...</div>
+    
+    <!-- =========================================================
+         NAVBAR
+         ========================================================= -->
+    <nav class="nav" aria-label="Primary">
+        <div class="container nav-inner">
+            <!-- Brand with logo + title -->
+            <a class="brand" href="web_v1.2.html" aria-label="Go to Home">
+                <img src="photos/logo.png" alt="AI DR Assistant logo" class="brand-img" />
+                <span class="brand-name">AI DR Assistant</span>
+                <span class="brand-sub">by JMI</span>
+            </a>
+
+            <div class="nav-actions">
+                <a href="web_v1.2.html" class="btn">← Back to Home</a>
+                <button class="icon-btn" id="btnTheme" aria-label="Toggle theme" title="Toggle dark/light">🌓</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- =========================================================
+         MAIN CONTENT
+         ========================================================= -->
+    <div class="container">
+        <header class="section reveal" tabindex="-1">
+            <div class="hero">
+                <div>
+                    <span class="badge">X-RAY ANALYSIS</span>
+                    <h1>🩻 Chest X-Ray Analysis</h1>
+                    <p class="lead">Powered by JMI AI - LCDT(X-b) Model. Upload a chest X-ray image for instant AI-powered analysis and diagnosis assistance.</p>
+                    <div class="grid cols-2">
+                        <a href="#upload" class="btn primary">Start Analysis</a>
+                        <a href="web_v1.2.html" class="btn">Learn More</a>
+                    </div>
+                </div>
+                <div class="hero-card">
+                    <h3>How It Works</h3>
+                    <ol>
+                        <li>Upload your chest X-ray image (JPEG/PNG)</li>
+                        <li>AI analyzes the image using our trained model</li>
+                        <li>Get instant results with confidence scores</li>
+                        <li>Review detailed analysis and recommendations</li>
+                    </ol>
+                    <div class="grid cols-3" style="margin-top:8px;">
+                        <div class="badge">🔒 Secure</div>
+                        <div class="badge">⚡ Fast</div>
+                        <div class="badge">🎯 Accurate</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section id="upload" class="section reveal" aria-labelledby="upload-title" tabindex="-1">
+            <div class="container">
+                <h2 id="upload-title">Upload Chest X-Ray Image</h2>
+                <p class="lead">Drag and drop or click to upload a chest X-ray image for AI analysis</p>
+                
+                <div class="upload-section">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📁</div>
+                        <div class="upload-text">Click to upload or drag and drop</div>
+                        <div class="upload-subtext">Supports: JPEG, PNG (Max: 10MB)</div>
+                    </div>
+                    
+                    <input type="file" id="fileInput" accept="image/*">
+                    <button class="btn primary" onclick="document.getElementById('fileInput').click()">Choose File</button>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing X-ray image...</p>
+                    <p>This may take a few moments</p>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <div class="analysis-section" id="analysisSection">
+                    <div class="image-preview" id="imagePreview"></div>
+                    <div class="result-card" id="resultCard">
+                        <div class="result-title" id="resultTitle">Analysis Result</div>
+                        <div class="confidence-text" id="confidenceText">Confidence: --</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                        </div>
+                        <div id="resultDetails"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer style="padding: 28px 0 40px; color: var(--muted); border-top: 1px solid var(--border); background: color-mix(in oklab, var(--surface), transparent 10%);">
+            <div class="container">
+                <div class="footer-grid" style="display:grid; gap:16px; grid-template-columns: 2fr 1fr 1fr; align-items: start;">
+                    <div class="footer-brand" style="display:flex; align-items:center; gap:12px;">
+                        <img src="photos/logo.png" alt="JMI Logo" class="footer-logo" style="height: clamp(24px, 4.5vw, 36px); width: clamp(24px, 4.5vw, 36px); border-radius: 50%; object-fit: cover;">
+                        <div>
+                            <div style="font-weight: 600;">© 2025 JMI Team</div>
+                            <div style="font-size: 14px;">AI-Powered Medical Image Analysis</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="lead" style="font-size:13px;">Features</div>
+                        <div>X-Ray Analysis</div>
+                        <div>AI Diagnostics</div>
+                        <div>Medical Imaging</div>
+                    </div>
+                    <div>
+                        <div class="lead" style="font-size:13px;">Support</div>
+                        <div><a href="web_v1.2.html">Documentation</a></div>
+                        <div><a href="web_v1.2.html#feedback">Feedback</a></div>
+                        <div><a href="web_v1.2.html#info">Team Info</a></div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script type="module">
+        // ---------- Helpers ----------
+        const $ = (sel, root=document) => root.querySelector(sel);
+        const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+        // Respect reduced motion in JS animations
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // ---------- Theme toggle (persists to localStorage) ----------
+        const THEME_KEY = 'theme'; // 'light' | 'dark'
+        const html = document.documentElement;
+        (function initTheme(){
+            const saved = localStorage.getItem(THEME_KEY);
+            if(saved) html.setAttribute('data-theme', saved);
+        })();
+        $('#btnTheme').addEventListener('click', () => {
+            const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem(THEME_KEY, next);
+        });
+
+        // ---------- Reveal animations on scroll ----------
+        const revealables = $$('.reveal');
+        const ioReveal = new IntersectionObserver((entries)=>{
+            entries.forEach(entry => { if(entry.isIntersecting){ entry.target.classList.add('in'); ioReveal.unobserve(entry.target); } });
+        }, { threshold: 0.12 });
+        revealables.forEach(el => ioReveal.observe(el));
+
+        // ---------- Upload functionality ----------
+        const config = {
+            API_BASE_URL: 'NGROK_XRAY_BASE_URL_HERE' // Replace this with your actual ngrok URL for port 8000
+        };
+
+        let currentFile = null;
+
+        // Check API status on page load
+        window.addEventListener('load', checkApiStatus);
+
+        // Upload area functionality
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file.');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                showError('File size must be less than 10MB.');
+                return;
+            }
+
+            currentFile = file;
+            displayImagePreview(file);
+            analyzeImage(file);
+        }
+
+        function displayImagePreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imagePreview = document.getElementById('imagePreview');
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Uploaded X-ray">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function analyzeImage(file) {
+            showLoading(true);
+            hideMessages();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${config.API_BASE_URL}/predict`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    let errorDetail = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorJson = await response.json();
+                        errorDetail = errorJson.detail || errorDetail;
+                    } catch (e) { /* Ignore if response is not JSON */ }
+                    throw new Error(errorDetail);
+                }
+
+                const result = await response.json();
+                displayResult(result);
+                showSuccess('Analysis complete!');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Analysis failed: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayResult(result) {
+            const analysisSection = document.getElementById('analysisSection');
+            const resultTitle = document.getElementById('resultTitle');
+            const confidenceText = document.getElementById('confidenceText');
+            const confidenceFill = document.getElementById('confidenceFill');
+            const resultDetails = document.getElementById('resultDetails');
+            const resultCard = document.getElementById('resultCard');
+
+            // Show analysis section
+            analysisSection.style.display = 'block';
+
+            // Update result
+            resultTitle.textContent = result.result;
+            confidenceText.textContent = `Confidence: ${(result.confidence * 100).toFixed(1)}%`;
+
+            // Update confidence bar
+            const confidencePercent = result.confidence * 100;
+            confidenceFill.style.width = `${confidencePercent}%`;
+
+            // Update result details
+            resultDetails.innerHTML = `
+                <p><strong>Prediction Score:</strong> ${(result.prediction_score * 100).toFixed(1)}%</p>
+                <p><strong>Analysis:</strong> ${result.message}</p>
+            `;
+
+            // Update card styling based on result
+            resultCard.className = 'result-card';
+            if (result.status === 'danger') {
+                resultCard.classList.add('result-danger');
+            } else {
+                resultCard.classList.add('result-normal');
+            }
+
+            // Scroll to results
+            analysisSection.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth' });
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => successDiv.style.display = 'none', 5000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        async function checkApiStatus() {
+            try {
+                const response = await fetch(`${config.API_BASE_URL}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateApiStatus('online', `API Online - Model: ${data.model_loaded ? 'Loaded' : 'Not Loaded'}`);
+                } else {
+                    updateApiStatus('offline', 'API Offline');
+                }
+            } catch (error) {
+                updateApiStatus('offline', 'API Offline');
+            }
+        }
+
+        function updateApiStatus(status, message) {
+            const statusDiv = document.getElementById('apiStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `api-status status-${status}`;
+        }
+
+        // Check API status every 30 seconds
+        setInterval(checkApiStatus, 30000);
+    </script>
+</body>
+</html>

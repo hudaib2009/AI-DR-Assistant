@@ -1,0 +1,18 @@
+# Python virtual environments
+.venv/
+.venv_LCDTX/
+.uvenv/
+venv/
+main_env/
+lcdtx_env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Model files
+*.h5
+
+# OS-specific files
+.DS_Store

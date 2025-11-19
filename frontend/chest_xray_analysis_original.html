@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JMI - Chest X-Ray Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #5e17eb 0%, #7a49f1 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 60px 20px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #5e17eb;
+            background-color: #f8f9ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #5e17eb;
+            background-color: #f0f4ff;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #5e17eb;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .analysis-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .image-preview {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+            border-left: 5px solid #5e17eb;
+        }
+
+        .result-danger {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+        }
+
+        .result-normal {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, #f0fff4 0%, #e8ffe8 100%);
+        }
+
+        .result-title {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .result-danger .result-title {
+            color: #dc3545;
+        }
+
+        .result-normal .result-title {
+            color: #28a745;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #5e17eb 0%, #7a49f1 100%);
+            transition: width 0.5s ease;
+        }
+
+        .confidence-text {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #5e17eb;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #5e17eb 0%, #7a49f1 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(94, 23, 235, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .api-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .status-online {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-offline {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="api-status" id="apiStatus">Checking API...</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🩻 Chest X-Ray Analysis</h1>
+            <p>Powered by JMI AI - LCDT(X-b) Model</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <h2>Upload Chest X-Ray Image</h2>
+                <p>Drag and drop or click to upload a chest X-ray image (JPEG, PNG)</p>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Click to upload or drag and drop</div>
+                    <div class="upload-subtext">Supports: JPEG, PNG (Max: 10MB)</div>
+                </div>
+                
+                <input type="file" id="fileInput" accept="image/*">
+                <button class="btn" onclick="document.getElementById('fileInput').click()">Choose File</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing X-ray image...</p>
+                <p>This may take a few moments</p>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <div class="analysis-section" id="analysisSection">
+                <div class="image-preview" id="imagePreview"></div>
+                <div class="result-card" id="resultCard">
+                    <div class="result-title" id="resultTitle">Analysis Result</div>
+                    <div class="confidence-text" id="confidenceText">Confidence: --</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                    </div>
+                    <div id="resultDetails"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2025 JMI Team - AI-Powered Medical Image Analysis</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        let currentFile = null;
+
+        // Check API status on page load
+        window.addEventListener('load', checkApiStatus);
+
+        // Upload area functionality
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file.');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                showError('File size must be less than 10MB.');
+                return;
+            }
+
+            currentFile = file;
+            displayImagePreview(file);
+            analyzeImage(file);
+        }
+
+        function displayImagePreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imagePreview = document.getElementById('imagePreview');
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Uploaded X-ray">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function analyzeImage(file) {
+            showLoading(true);
+            hideMessages();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE_URL}/predict`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                displayResult(result);
+                showSuccess('Analysis completed successfully!');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Analysis failed: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayResult(result) {
+            const analysisSection = document.getElementById('analysisSection');
+            const resultTitle = document.getElementById('resultTitle');
+            const confidenceText = document.getElementById('confidenceText');
+            const confidenceFill = document.getElementById('confidenceFill');
+            const resultDetails = document.getElementById('resultDetails');
+            const resultCard = document.getElementById('resultCard');
+
+            // Show analysis section
+            analysisSection.style.display = 'block';
+
+            // Update result
+            resultTitle.textContent = result.result;
+            confidenceText.textContent = `Confidence: ${(result.confidence * 100).toFixed(1)}%`;
+
+            // Update confidence bar
+            const confidencePercent = result.confidence * 100;
+            confidenceFill.style.width = `${confidencePercent}%`;
+
+            // Update result details
+            resultDetails.innerHTML = `
+                <p><strong>Prediction Score:</strong> ${(result.prediction_score * 100).toFixed(1)}%</p>
+                <p><strong>Analysis:</strong> ${result.message}</p>
+            `;
+
+            // Update card styling based on result
+            resultCard.className = 'result-card';
+            if (result.status === 'danger') {
+                resultCard.classList.add('result-danger');
+            } else {
+                resultCard.classList.add('result-normal');
+            }
+
+            // Scroll to results
+            analysisSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => successDiv.style.display = 'none', 5000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        async function checkApiStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateApiStatus('online', `API Online - Model: ${data.model_loaded ? 'Loaded' : 'Not Loaded'}`);
+                } else {
+                    updateApiStatus('offline', 'API Offline');
+                }
+            } catch (error) {
+                updateApiStatus('offline', 'API Offline');
+            }
+        }
+
+        function updateApiStatus(status, message) {
+            const statusDiv = document.getElementById('apiStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `api-status status-${status}`;
+        }
+
+        // Check API status every 30 seconds
+        setInterval(checkApiStatus, 30000);
+    </script>
+</body>
+</html>
+
