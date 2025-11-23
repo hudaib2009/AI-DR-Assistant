@@ -24,7 +24,7 @@ import os
 IMG_SIZE = 128
 try:
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    model_path = os.path.join(script_dir, 'h.h5')
+    model_path = os.path.join(script_dir, 'LCDT_converted.keras')
     model = tf.keras.models.load_model(model_path, compile=False)
     print("Model loaded successfully!")
 except Exception as e:
