@@ -1,132 +1,76 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import tensorflow as tf
+import os
+from fastapi import FastAPI, UploadFile, File
+import uvicorn
 import numpy as np
-from PIL import Image, ImageOps
+import tensorflow as tf
+from tensorflow import keras
+from PIL import Image
 import io
-import base64
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="JMI LCDT API", version="1.0.0")
+app = FastAPI()
 
-# Enable CORS for frontend integration
+# Allow all CORS (same as your original setup)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend domain
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-import os
-# ...
-# Load the model
+# IMAGE SIZE
 IMG_SIZE = 128
+
+# 🔥 Load the Updated Keras 3 Model
 try:
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    model_path = os.path.join(script_dir, 'LCDT_converted.keras')
-    model = tf.keras.models.load_model(model_path, compile=False)
-    print("Model loaded successfully!")
+    model_path = os.path.join(script_dir, "LCDT_converted.keras")
+
+    model = keras.models.load_model(model_path, compile=False)
+
+    print("🔥 Model loaded successfully: LCDT_converted.keras")
+
 except Exception as e:
-    print(f"Error loading model: {e}")
+    print(f"❌ ERROR loading model: {e}")
     model = None
 
-@app.get("/")
-async def root():
-    return {"message": "JMI LCDT API is running"}
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "model_loaded": model is not None}
+def preprocess_image(image):
+    image = image.convert("L")  # grayscale
+    image = image.resize((IMG_SIZE, IMG_SIZE))
+    image_array = np.array(image) / 255.0
+    image_array = np.expand_dims(image_array, axis=(0, -1))
+    return image_array
+
 
 @app.post("/predict")
-async def predict_image(file: UploadFile = File(...)):
-    if not model:
-        raise HTTPException(status_code=500, detail="Model not loaded")
-    
-    if not file.content_type.startswith('image/'):
-        raise HTTPException(status_code=400, detail="File must be an image")
-    
-    try:
-        # Read and process the image
-        contents = await file.read()
-        image = Image.open(io.BytesIO(contents)).convert('L')
-        image = image.resize((IMG_SIZE, IMG_SIZE))
-        
-        # Convert to array and normalize
-        img_array = np.array(image) / 255.0
-        img_array = img_array.reshape(1, IMG_SIZE, IMG_SIZE, 1)
-        
-        # Make prediction
-        prediction = model.predict(img_array)[0][0]
-        
-        # Determine result
-        if prediction > 0.5:
-            result = "Danger Detected"
-            confidence = prediction
-            status = "danger"
-        else:
-            result = "Normal"
-            confidence = 1 - prediction
-            status = "normal"
-        
-        # Convert image to base64 for frontend display
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        img_base64 = base64.b64encode(buffered.getvalue()).decode()
-        
-        return JSONResponse({
-            "result": result,
-            "confidence": float(confidence),
-            "prediction_score": float(prediction),
-            "status": status,
-            "image_base64": img_base64,
-            "message": f"Prediction: {result} (Confidence: {confidence:.2f})"
-        })
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+async def predict(file: UploadFile = File(...)):
+    if model is None:
+        return {"error": "Model not loaded"}
 
-@app.post("/predict-base64")
-async def predict_base64_image(image_data: dict):
-    """Alternative endpoint that accepts base64 encoded images"""
-    if not model:
-        raise HTTPException(status_code=500, detail="Model not loaded")
-    
-    try:
-        # Decode base64 image
-        image_bytes = base64.b64decode(image_data["image"].split(",")[1])
-        image = Image.open(io.BytesIO(image_bytes)).convert('L')
-        image = image.resize((IMG_SIZE, IMG_SIZE))
-        
-        # Convert to array and normalize
-        img_array = np.array(image) / 255.0
-        img_array = img_array.reshape(1, IMG_SIZE, IMG_SIZE, 1)
-        
-        # Make prediction
-        prediction = model.predict(img_array)[0][0]
-        
-        # Determine result
-        if prediction > 0.5:
-            result = "Danger Detected"
-            confidence = prediction
-            status = "danger"
-        else:
-            result = "Normal"
-            confidence = 1 - prediction
-            status = "normal"
-        
-        return JSONResponse({
-            "result": result,
-            "confidence": float(confidence),
-            "prediction_score": float(prediction),
-            "status": status,
-            "message": f"Prediction: {result} (Confidence: {confidence:.2f})"
-        })
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+    image_bytes = await file.read()
+    image = Image.open(io.BytesIO(image_bytes))
+    img_array = preprocess_image(image)
 
+    # Keras 3 safe prediction
+    pred = model.predict(img_array)
+    prediction = float(pred.squeeze())
+
+    result = "Positive" if prediction > 0.5 else "Negative"
+
+    return {
+        "prediction": result,
+        "raw_value": prediction,
+    }
+
+
+@app.get("/")
+def root():
+    return {"message": "AI DR Assistant API is running with LCDT_converted.keras"}
+
+
+# Run the server
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+
