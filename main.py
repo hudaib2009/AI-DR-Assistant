@@ -1,76 +1,92 @@
-import os
-from fastapi import FastAPI, UploadFile, File
-import uvicorn
-import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from PIL import Image
 import io
-from fastapi.middleware.cors import CORSMiddleware
+import numpy as np
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import JSONResponse
+from PIL import Image
+import tensorflow as tf
 
 app = FastAPI()
 
-# Allow all CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-IMG_SIZE = 128
-
-# Load Keras 3 Model
+# -------------------------------
+# Load Keras 3 model safely
+# -------------------------------
+model = None
 try:
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    model_path = os.path.join(script_dir, "LCDT_converted.keras")
-
-    print(f"🔍 Loading model from: {model_path}")
-    model = keras.models.load_model(model_path)
-
-    print("🔥 Model loaded successfully")
-
+    model = tf.keras.models.load_model("LCDT_converted.keras")
+    print("✅ Model loaded successfully.")
 except Exception as e:
-    print(f"❌ ERROR loading model: {e}")
-    model = None
+    print("❌ Failed to load model:", e)
 
 
+# -------------------------------
+# Health check (fixes Render/Host 404 spam)
+# -------------------------------
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
+# -------------------------------
+# Preprocess function
+# -------------------------------
 def preprocess_image(image):
-    image = image.convert("L")
-    image = image.resize((IMG_SIZE, IMG_SIZE))
-    image_array = np.array(image) / 255.0
-    image_array = np.expand_dims(image_array, axis=(0, -1))
-    return image_array
+    image = image.convert("L")                 # grayscale if model expects 1 channel
+    image = image.resize((128, 128))           # resize to match training setup
+    img_array = np.array(image).astype("float32") / 255.0
+    img_array = np.expand_dims(img_array, axis=-1)
+    img_array = np.expand_dims(img_array, axis=0)
+    return img_array
 
 
-@app.get("/predict")
-async def health_check():
-    return {"status": "healthy", "model_loaded": model is not None}
-
-
-@app.post("/health")
+# -------------------------------
+# Prediction endpoint with
+# complete ASGI-safe error handling
+# -------------------------------
+@app.post("/predict")
 async def predict(file: UploadFile = File(...)):
+
+    # --- Model not loaded ---
     if model is None:
-        return {"error": "Model not loaded"}
+        return JSONResponse(
+            {"error": "Model failed to load"},
+            status_code=500
+        )
 
-    image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes))
-    img_array = preprocess_image(image)
+    try:
+        image_bytes = await file.read()
+        image = Image.open(io.BytesIO(image_bytes))
 
-    # Keras 3 TFSMLayer inference
-    pred = model(img_array, training=False).numpy()
-    prediction = float(pred.squeeze())
+    except Exception as e:
+        return JSONResponse(
+            {"error": f"Invalid image: {e}"},
+            status_code=400
+        )
 
-    result = "Positive" if prediction > 0.5 else "Negative"
+    try:
+        img_array = preprocess_image(image)
 
-    return {"prediction": result, "raw_value": prediction}
+        # Keras 3 safe call
+        pred_tensor = model(img_array, training=False)
+        pred_value = float(pred_tensor.numpy().squeeze())
+
+        result = "Positive" if pred_value > 0.5 else "Negative"
+
+        return {
+            "prediction": result,
+            "raw_value": pred_value
+        }
+
+    except Exception as e:
+        # Prevent ASGI crash
+        return JSONResponse(
+            {"error": f"Inference error: {e}"},
+            status_code=500
+        )
 
 
+# -------------------------------
+# Root endpoint
+# -------------------------------
 @app.get("/")
-def root():
-    return {"message": "API running with LCDT_converted.keras"}
-
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+async def root():
+    return {"message": "AI DR Assistant API is running"}
