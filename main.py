@@ -45,7 +45,7 @@ def preprocess_image(image):
     return image_array
 
 
-@app.post("/predict")
+@app.post("/health")
 async def predict(file: UploadFile = File(...)):
     if model is None:
         return {"error": "Model not loaded"}
