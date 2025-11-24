@@ -27,7 +27,8 @@ try:
     script_dir = os.path.dirname(os.path.realpath(__file__))
     model_path = os.path.join(script_dir, "LCDT_converted.keras")
 
-    model = keras.models.load_model(model_path, compile=False)
+    model = keras.models.load_model("LCDT_converted.keras")
+
 
     print("🔥 Model loaded successfully: LCDT_converted.keras")
 
