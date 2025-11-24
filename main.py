@@ -22,6 +22,7 @@ except Exception as e:
 # Health check (fixes Render/Host 404 spam)
 # -------------------------------
 @app.get("/health")
+@app.head("/health")
 async def health():
     return {"status": "ok"}
 
