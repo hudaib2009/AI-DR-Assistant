@@ -615,7 +615,7 @@
 
         async function checkApiStatus() {
             try {
-                const response = await fetch(`${config.API_BASE_URL}/health`);
+                const response = await fetch(`${config.API_BASE_URL}/predict`, {
                 if (response.ok) {
                     const data = await response.json();
                     updateApiStatus('online', `API Online - Model: ${data.model_loaded ? 'Loaded' : 'Not Loaded'}`);

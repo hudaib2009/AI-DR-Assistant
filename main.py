@@ -45,7 +45,13 @@ def preprocess_image(image):
     return image_array
 
 
-@app.post("/health")
+@app.get("/health")
+async def health_check():
+    """A simple endpoint to confirm the API is running."""
+    return {"status": "healthy"}
+
+
+@app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if model is None:
         return {"error": "Model not loaded"}

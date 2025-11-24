@@ -46,6 +46,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Health Check Endpoint ---
+@app.get("/health")
+async def health_check():
+    """A simple endpoint to confirm the API is running."""
+    return {"status": "healthy"}
+
 # --- Pydantic Models ---
 # Defines the structure of the request and response data
 class ChatRequest(BaseModel):
