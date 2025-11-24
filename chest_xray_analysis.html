@@ -615,9 +615,16 @@
 
         async function checkApiStatus() {
             try {
-                const response = await fetch(`${config.API_BASE_URL}/predict`, {
+                // perform a lightweight GET to the predict endpoint to check health
+                const response = await fetch(`${config.API_BASE_URL}/predict`);
                 if (response.ok) {
-                    const data = await response.json();
+                    // attempt to parse JSON, but tolerate non-JSON responses
+                    let data = {};
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        // ignore JSON parse errors
+                    }
                     updateApiStatus('online', `API Online - Model: ${data.model_loaded ? 'Loaded' : 'Not Loaded'}`);
                 } else {
                     updateApiStatus('offline', 'API Offline');
