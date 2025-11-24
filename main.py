@@ -44,12 +44,12 @@ def preprocess_image(image):
     return image_array
 
 
-@app.get("/health")
+@app.get("/predict")
 async def health_check():
     return {"status": "healthy", "model_loaded": model is not None}
 
 
-@app.post("/predict")
+@app.post("/health")
 async def predict(file: UploadFile = File(...)):
     if model is None:
         return {"error": "Model not loaded"}
