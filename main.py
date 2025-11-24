@@ -47,8 +47,8 @@ def preprocess_image(image):
 
 @app.get("/health")
 async def health_check():
-    """A simple endpoint to confirm the API is running."""
-    return {"status": "healthy"}
+    """A simple endpoint to confirm the API is running and the model is loaded."""
+    return {"status": "healthy", "model_loaded": model is not None}
 
 
 @app.post("/predict")
