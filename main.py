@@ -22,7 +22,7 @@ app.add_middleware(
 # -----------------------------
 # Model Loading
 # -----------------------------
-MODEL_PATH = "/opt/render/project/src/LCDT_converted.keras"
+MODEL_PATH = "LCDT_converted.keras"
 model = None
 
 if os.path.exists(MODEL_PATH):
