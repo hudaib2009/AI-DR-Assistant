@@ -5,6 +5,7 @@ from PIL import Image
 import io
 import tensorflow as tf
 import os
+from fastapi.responses import FileResponse
 
 # -----------------------------
 # App Initialization
@@ -18,6 +19,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve index.html at the root
+@app.get("/")
+async def read_root():
+    return FileResponse("index.html")
 
 # -----------------------------
 # Model Loading
